@@ -1,0 +1,218 @@
+name: trinohack
+
+services:
+  mysql:
+    env_file:
+      - path: mysql.env
+        required: true
+    image: ${MYSQL_IMAGE-container-registry.oracle.com/mysql/community-server}
+    networks:
+      - trinocluster
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "4g"
+      restart_policy:
+        condition: on-failure
+    environment:
+      # https://dev.mysql.com/doc/refman/8.4/en/docker-mysql-more-topics.html#docker-environment-variables
+      MYSQL_DATABASE: "metastore"
+      MYSQL_LOG_CONSOLE: "true"
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_ONETIME_PASSWORD:
+      MYSQL_RANDOM_ROOT_PASSWORD:
+      MYSQL_ALLOW_EMPTY_PASSWORD:
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-p$${MYSQL_ROOT_PASSWORD-error}" ]
+      start_period: 5s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    expose:
+      - '3306'
+    volumes:
+      - mysqldb:/var/lib/mysql
+    dns:
+      - 8.8.8.8
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  minio:
+    env_file:
+      - path: minio.env
+        required: true
+    image: quay.io/minio/minio
+    networks:
+      - trinocluster
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "4g"
+      restart_policy:
+        condition: on-failure
+    environment:
+      MINIO_CONFIG_ENV_FILE: /etc/config.env
+    command: ["server", "--console-address", ":9001", "--address", ":9000"]
+    healthcheck:
+      test: ["CMD", "curl", "-I", "localhost:9000/minio/health/live"]
+      start_period: 5s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - minio_s3:/data
+      - ${PWD}/.workdir/config/minio/config.env:/etc/config.env:ro
+      - ${PWD}/.workdir/certs:/root/.minio/certs:ro
+    dns:
+      - 8.8.8.8
+    ports:
+      - name: "minio"
+        target: 9001
+        published: "${MINIO_URL_PORT-9001}"
+        protocol: tcp
+        app_protocol: http
+      - name: "s3"
+        target: 9000
+        published: "${MINIO_ENDPOINT-9000}"
+        protocol: tcp
+        app_protocol: s3
+    expose:
+      - '9001'
+      - '9000'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  metastore:
+    image: ${HIVE_IMAGE:-apache/hive:4.0.1}
+    networks:
+      - trinocluster
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "4g"
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      IS_RESUME: ${IS_RESUME-false}
+      DB_DRIVER: "mysql"
+      SERVICE_NAME: "metastore"
+    volumes:
+      - ${PWD}/.workdir/config/metastore/hive-site.xml:/opt/hive/conf/hive-site.xml:ro
+      - ${PWD}/.workdir/certs/public.crt:/opt/hive/certs/public.crt:ro
+    dns:
+      - 8.8.8.8
+    healthcheck:
+      test: ["CMD", "grep" ,"-q", "-s", "00000000:237B", "/proc/net/tcp", "/proc/net/tcp6"]
+      start_period: 5s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    expose:
+      - '9083'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  trino-coordinator:
+    image: trinodb/trino:460
+    env_file:
+      - path: trino.env
+        required: false
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "16g"
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      metastore:
+        condition: service_healthy
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAM=4g -XX:ActiveProcessorCount=2"
+      AWS_JAVA_V1_DISABLE_DEPRECATION_ANNOUNCEMENT: true
+    volumes:
+      - ${PWD}/.workdir/config/trino/coordinator/:/etc/trino/
+      - ${PWD}/.workdir/certs/CAs/cacerts:/usr/lib/jvm/temurin/jdk-23+37/lib/security/cacerts:ro
+    dns:
+      - 8.8.8.8
+    networks:
+      - trinocluster
+    ports:
+      - name: "trino"
+        target: 8080
+        published: "${TRINO_URL_PORT-8080}"
+        protocol: tcp
+        app_protocol: http
+    expose:
+      - '8080'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  trino-worker:
+    image: trinodb/trino:460
+    env_file:
+      - path: trino.env
+        required: false
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "16g"
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      trino-coordinator:
+        condition: service_healthy
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAM=4g -XX:ActiveProcessorCount=2"
+      AWS_JAVA_V1_DISABLE_DEPRECATION_ANNOUNCEMENT: true
+    volumes:
+      - ${PWD}/.workdir/config/trino/worker:/etc/trino/
+      - ${PWD}/.workdir/certs/CAs/cacerts:/usr/lib/jvm/temurin/jdk-23+37/lib/security/cacerts:ro
+    dns:
+      - 8.8.8.8
+    networks:
+      - trinocluster
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  trinocluster:
+    external: false
+    attachable: true
+    driver: bridge
+
+volumes:
+  mysqldb:
+  minio_s3:

@@ -1,0 +1,6 @@
+exchange-manager.name=filesystem
+exchange.s3.endpoint=https://${ENV:S3_ENDPOINT}
+exchange.base-directories=s3://${ENV:S3_BUCKET}/spool/
+exchange.s3.region=ZH
+exchange.s3.aws-access-key=${ENV:S3_KEY}
+exchange.s3.aws-secret-key=${ENV:S3_SECRET}

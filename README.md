@@ -44,12 +44,23 @@ available from AWS open data registry at [https://registry.opendata.aws/noaa-hrr
 
 ## Prerequesite
 
-* Docker or docker-compatible container runtime
+* Docker or docker-compatible container runtime:
     - [Docker Engine](https://docs.docker.com/engine/install/)
     - [Colima](https://github.com/abiosoft/colima)
     - [Podman](https://podman.io/docs/installation) - with podman-compose
     - [Orbstack](https://orbstack.dev/download)
-    - Others
+    - Others ...
+* Git, and an integrated development environment suitable for java (e.g. vscode)
+* Knowledge of Java and git
+
+## Repository structure
+
+* [Hive metastore](./images/hive): if you want to build your own hive metastore docker image, but this should not be necessary - pre-built images are available as `erbou/metastore:4.0.1` (amd64), and `erbou/metastore:4.0.1-aarch64` (arm64).
+The hive metastore is one of the technologies available to store the meta data used to describe Trino schemas (SQL databases) and table schemas of data stored on S3.
+
+* [Docker compose](./containers): contains pre-initialization scripts and docker compose file to bring up a small Trino cluster and S3 minio storage.
+
+* [Test folder](./test): contains scripts useful to test a Trino cluster. It uses by default the mini Trino cluster from the docker compose configuration, but can be configured to access external Trino clusters and/or S3 storages.
 
 ## Useful links
 
@@ -68,4 +79,6 @@ available from AWS open data registry at [https://registry.opendata.aws/noaa-hrr
 
 ### Useful links
 8. [Catalog REST API (Iceberg OpenAPI)](https://github.com/apache/iceberg/blob/main/open-api/rest-catalog-open-api.yaml)
+9. [Introduction to REST Catalog](https://github.com/erbou/pygrader-ws/pulls)
+9. [Apache Gravitino REST Catalog](https://github.com/apache/gravitino)
 

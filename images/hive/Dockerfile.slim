@@ -1,0 +1,58 @@
+# syntax=docker/dockerfile:1
+# escape=\
+
+# Slim version based on modified apache/hive:4.0.1
+# Hive: 4.0.1
+# Hadoop: 3.3.6
+# Java: 21 LTS
+# Mysql: 9.1.0
+
+FROM debian:buster-slim AS builder
+
+WORKDIR /
+
+ARG MYSQL_VERSION=9.1.0
+ARG MYSQL_CHECKSUM=sha256:f5198db93f529206d7f13f613c38753fec0b698be9f5410391aed1d62c57acb7
+
+ADD --checksum=${MYSQL_CHECKSUM} --chmod=0600 --link \
+        https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-j-${MYSQL_VERSION}.tar.gz \
+        /mysql-connector-j-${MYSQL_VERSION}.tar.gz
+
+RUN <<-"EOF" bash
+  tar xf /mysql-connector-j-${MYSQL_VERSION}.tar.gz mysql-connector-j-${MYSQL_VERSION}/mysql-connector-j-${MYSQL_VERSION}.jar
+EOF
+
+FROM debian:buster-slim
+
+ARG MYSQL_VERSION=9.1.0
+ENV JAVA_HOME=/opt/java/openjdk
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+ENV HADOOP_HOME=/opt/hadoop
+ENV HADOOP_CONF_DIR=${HADOOP_HOME}/etc/hadoop
+ENV HIVE_HOME=/opt/hive
+ENV HIVE_VER=4.0.1
+ENV PATH=${HIVE_HOME}/bin:${HADOOP_HOME}/bin:${PATH}
+
+COPY --from=apache/hive:4.0.1 /opt/hive /opt/hive
+COPY --from=apache/hive:4.0.1 /opt/hadoop /opt/hadoop
+COPY --from=apache/hive:4.0.1 --chmod=0755 /entrypoint.sh /
+COPY --from=eclipse-temurin:21-jre --link ${JAVA_HOME} ${JAVA_HOME}
+COPY --from=builder --link /mysql-connector-j-${MYSQL_VERSION}/mysql-connector-j-${MYSQL_VERSION}.jar /opt/hive/lib
+
+RUN <<-"EOF" bash
+  useradd -l -M -U -u 1000 -s /bin/bash hive
+  mkdir -p /opt/hive/data/warehouse
+  chown hive:hive /opt/hive
+  chown hive:hive /opt/hadoop
+  chown hive:hive -R /opt/hive/conf
+  chown hive:hive -R /opt/hive/data/warehouse
+  ln -fs /opt/hadoop/share/hadoop/tools/lib/aws-java-sdk-bundle-1.12.367.jar /opt/hive/lib/
+  ln -fs /opt/hadoop/share/hadoop/tools/lib/hadoop-aws-3.3.6.jar /opt/hive/lib/
+EOF
+
+USER hive
+WORKDIR /opt/hive
+
+EXPOSE 9083
+
+ENTRYPOINT [ "sh", "-c", "/entrypoint.sh" ]

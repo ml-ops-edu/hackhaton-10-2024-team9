@@ -1,0 +1,8 @@
+#single node install config
+coordinator=true
+node-scheduler.include-coordinator=false
+http-server.http.port=8080
+discovery.uri=http://trino-coordinator:8080
+catalog.management=${ENV:CATALOG_MANAGEMENT}
+exchange.compression-codec=LZ4
+# retry-policy=TASK
