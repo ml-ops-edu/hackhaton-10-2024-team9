@@ -39,7 +39,7 @@ This config should be used primarily for testing purposes, such as testing or tr
     - Create the bucket using the value of _S3_BUCKET_ from _minio.env_ (normally _hackathon_)
     - Note: the bucket and user are automatically created when running the [test suite](../test/)
 
-![docker stack](../doc/figs/docker-compose-doc.svg)
+![docker stack](../docs/figs/docker-compose-doc.svg)
 
 ### Test
 - After deploying a trino cluster using `docker compose -p trinohack up -d`
