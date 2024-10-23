@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Processing Large Scale Multidimensional S3 Data on Distributed SQL Engines</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/theme/white.css">
+  <style>
+    /* Custom font size for the presentation */
+    .reveal h2 {
+      font-size: 1em; /* Adjust this value to reduce or increase the font size */
+    }
+    .reveal ul li {
+      font-size: 0.75em; /* Adjust this value for bullet points */
+    }
+    .fragment.blur {
+      filter: blur(5px);
+    }
+    .fragment.blur.visible {
+      filter: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+<section>
+  <h2>Purpose of NetCDF4/HDF5</h2>
+  <ul>
+    <li>Widely used in earth and medical data for storing and sharing large scientific datasets.</li>
+    <li>Ideal for <strong>multidimensional arrays</strong> (e.g., time-series, spatial data).</li>
+    <li>Supports metadata for describing variables and attributes, ensuring data usability.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>NetCDF4 Illustrated</h2>
+  <div style="display: flex; justify-content: space-between;">
+    <!-- Left Column: YAML Code -->
+    <div style="width: 50%; padding-right: 20px; max-height: 400px; overflow-y; auto;">
+      <pre><code class="yaml" style="font-size: 0.70em; line-height: 1.1;">
+netcdf: temperatures
+dimensions:
+  - x: 3
+  - y: 4
+  - time: unbounded
+variables:
+  - x: float
+  - y: float
+  - time: timestamp
+  - temperature(x,y,time): float
+data:
+  - x = [ 10,20,30 ]
+  - y = [ 1, 2, 3 ]
+  - time = [1:00, 1:15, 1:30]
+  - temperature = [
+       13, 6, 12, 7, 4, 5, 9, 11, 8,
+       11, 10, 12, 14, 19, 13, 16, 21, 20,
+       12, 11, 19, 13, 16, 14, 15, 17, 18
+    ]
+      </code></pre>
+    </div>
+    <!-- Right Column: External SVG Figure -->
+    <div style="width: 45%; padding-left: 20px;">
+      <img src="figs/netcdf4-1.svg" alt="NetCDF4" style="width: 100%; height: auto;">
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Limitations for Cloud Storage</h2>
+  <ul>
+    <li>Designed for <strong>local file systems</strong>, not optimized for cloud environments (e.g. S3).</li>
+    <li><strong>Single large files</strong> can cause inefficient data access and transfer over networks.</li>
+    <li>Limited support for <strong>concurrent access</strong> by multiple users.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>How Zarr Addresses These Limitations</h2>
+  <ul>
+    <li>Uses a <strong>chunked storage model</strong>, dividing data into smaller pieces.</li>
+    <li>Enables efficient <strong>cloud-native access</strong> with each chunk stored as an individual object.</li>
+    <li>Supports <strong>concurrent reading and writing</strong>, ideal for cloud-based workflows and distributed computing.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Zarr (V3) Illustrated</h2>
+  <img src="figs/zarr-v3.svg" alt="Zarr V3" style="max-width: 100%; max-height: 60vh; height: auto; margin-bottom: 20px;">
+</section>
+
+<section>
+  <section>
+  <h2>Trino Overview</h2>
+  <ul>
+    <li class="fragment custom blur">
+      <strong>What is Trino?</strong>
+      <ul>
+        <li>A distributed SQL query engine designed for big data.</li>
+        <li>Originally developed as Presto, now an open-source project under the Trino name.</li>
+      </ul>
+    </li>
+    <li class="fragment custom blur">
+      <strong>Key Features</strong>
+      <ul>
+        <li>High-performance analytics across diverse data sources.</li>
+        <li>Support for various storage systems (Hadoop, S3, MySQL, PostgreSQL, etc.).</li>
+        <li>Ability to access data from multiple systems within a single query.</li>
+        <li>Ability to run queries on large datasets without requiring data movement.</li>
+        <li>ANSI SQL compliance, making it user-friendly for SQL users.</li>
+      </ul>
+    </li>
+    <li class="fragment custom blur">
+      <strong>Architecture</strong>
+      <ul>
+        <li>Cluster-based architecture with coordinator and worker nodes.</li>
+        <li>Scales horizontally by adding more worker nodes for increased query capacity.</li>
+      </ul>
+    </li>
+  </ul>
+  </section>
+  <section>
+  <h2>Trino Overview</h2>
+  <ul>
+    <li class="fragment custom blur">
+      <strong>Use Cases</strong>
+      <ul>
+        <li>Data analytics for business intelligence (BI) tools.</li>
+        <li>Data lake querying and management.</li>
+        <li>Ad-hoc analysis on large datasets.</li>
+      </ul>
+    </li>
+    <li class="fragment custom blur">
+      <strong>Community and Ecosystem</strong>
+      <ul>
+        <li>Active community contributing to ongoing development and improvements.</li>
+        <li>Integrates with various BI and data visualization tools (e.g., Tableau, Looker).</li>
+      </ul>
+    </li>
+  </ul>
+  </section>
+</section>
+
+<section>
+  <h2>Trino Architecture</h2>
+  <img src="figs/trino-arch.svg" alt="Trino Arch" style="max-width: 100%; max-height: 60vh; height: auto; margin-bottom: 20px;">
+</section>
+
+<section>
+  <h2>Our Goals</h2>
+  <ul>
+    <li>Demonstrate the feasibility of developing a Trino connector and functions for efficient analysis of Zarr/NetCDF4 datasets at scale.</li>
+    <li class="fragment custom blur">Inspire the community to adopt and sustain the development of this connector and user-defined functions (UDFs).</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Deliverables</h2>
+  <ul>
+    <li>
+      <strong>In Scope</strong>
+      <ul>
+        <li>A comprehensive blueprint outlining the architecture and design.</li>
+        <li>A working proof of concept (PoC) that demonstrates the proposed solution or its essential components.</li>
+      </ul>
+    </li>
+    <li>
+      <strong>Out of Scope</strong>
+      <ul>
+        <li>Support for managing multiple tables within the same catalog; a catalog will be configured for one table location (no metastore required).</li>
+      </ul>
+    </li>
+  </ul>
+</section>
+
+<section>
+  <h2>Example</h2>
+  <ul>
+    <li>The following example demonstrates how to select chunks of values within a specified (lat, lon, time) range and compute their average over the time dimension.</li>
+  </ul>
+  <pre><code class="sql" style="font-size: 0.70em; line-height: 1.1;">
+WITH ClimateChunk AS (
+    SELECT chunk FROM climate WHERE
+        time        IN('2024-10-01', '2024-10-31' )
+        AND lon  IN(6.022609, 10.442701)
+        AND lat  IN(45.776947, 47.830827)
+    FROM Zarr.ClimateDB.SurfaceTemperatures
+)
+SELECT zarr_average(chunk, 'time') FROM ClimateChunk;
+  </code></pre>
+</section>
+
+  </div>
+</div>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.js"></script>
+  <script>
+    Reveal.initialize({
+      fragments: true, // Ensure fragments are enabled for bullet point animations
+    });
+  </script>
+</body>
+</html>
+
