@@ -211,7 +211,7 @@ main() {
     set -euE
     declare -r  mysql_version=9.1.0
     declare -r  mysql_connector_version=9.1.0
-    declare -r  trino_version=460
+    declare -r  trino_version=463
     declare -r  mysql_repo=container-registry.oracle.com/mysql/community-server
     declare -ar mysql_image=(arm64=${mysql_repo}:9.1-aarch64 x86_64=${mysql_repo}:9.1 aarch64=${mysql_repo}:9.1-aarch64 amd64=${mysql_repo}:9.1)
     declare -r  hive_repo=erbou/metastore
@@ -236,7 +236,7 @@ main() {
         in_docker=1
     fi
 
-    while getopts 'hfcv:' vararg "${@:-}"; do
+    while getopts 'hfcv' vararg "${@:-}"; do
         case ${vararg} in
         h) usage; exit ;;
         f) cleanup ;;
@@ -271,6 +271,7 @@ main() {
     set_env MYSQL_VER   "${mysql_version}"
     set_env MYSQL_IMAGE "$(echo ${mysql_image[*]}|sed -En 's|.*'$(uname -m)'=([^ ]+).*|\1|p')"
     set_env HIVE_IMAGE  "$(echo ${hive_image[*]}|sed -En 's|.*'$(uname -m)'=([^ ]+).*|\1|p')"
+    set_env TRINO_IMAGE "trinodb/trino:${trino_version}"
 
     if (( in_docker == 0 )); then
         if (( `docker info  -f '{{json .MemTotal }}'` < 8000000000 )); then

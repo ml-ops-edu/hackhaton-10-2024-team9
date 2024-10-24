@@ -5,7 +5,7 @@ services:
     env_file:
       - path: mysql.env
         required: true
-    image: ${MYSQL_IMAGE-container-registry.oracle.com/mysql/community-server}
+    image: ${MYSQL_IMAGE-container-registry.oracle.com/mysql/community-server:9.1}
     networks:
       - trinocluster
     deploy:
@@ -95,7 +95,7 @@ services:
         max-file: "3"
 
   metastore:
-    image: ${HIVE_IMAGE:-apache/hive:4.0.1}
+    image: ${HIVE_IMAGE:-erbou/metastore:4.0.1}
     networks:
       - trinocluster
     deploy:
@@ -134,7 +134,7 @@ services:
         max-file: "3"
 
   trino-coordinator:
-    image: trinodb/trino:460
+    image: ${TRINO_IMAGE-trinodb/trino:460}
     env_file:
       - path: trino.env
         required: false
@@ -175,7 +175,7 @@ services:
         max-file: "3"
 
   trino-worker:
-    image: trinodb/trino:460
+    image: ${TRINO_IMAGE-trinodb/trino:460}
     env_file:
       - path: trino.env
         required: false
