@@ -15,6 +15,7 @@
 package ch.sdsc.zarr;
 
 import com.google.common.collect.ImmutableMap;
+import io.airlift.configuration.ConfigurationLoader;
 import io.airlift.log.Level;
 import io.airlift.log.Logger;
 import io.airlift.log.Logging;
@@ -22,20 +23,31 @@ import io.trino.Session;
 import io.trino.testing.DistributedQueryRunner;
 import io.trino.testing.QueryRunner;
 
+import java.io.FileReader;
 import java.util.Map;
+import java.util.Properties;
 
 import static io.trino.testing.TestingSession.testSessionBuilder;
 import static java.util.Objects.requireNonNullElse;
+import com.google.inject.Inject; // NEW
 
-public class ExampleQueryRunner
+
+public class ZarrQueryRunner
 {
-    private ExampleQueryRunner() {}
+    private ZarrConfig zarrConfig;
 
-    public static QueryRunner createQueryRunner(TestingPostgreSqlServer server)
+
+    @Inject // NEW
+    public ZarrQueryRunner(ZarrConfig zarrConfig) {
+        this.zarrConfig = zarrConfig;
+    }
+    public static QueryRunner createQueryRunner()
             throws Exception
     {
+        Logger log = Logger.get(ZarrQueryRunner.class);
+        log.info("======== SERVER STARTING ========");
         Session defaultSession = testSessionBuilder()
-                .setCatalog("example")
+                .setCatalog("zar-connector")
                 .setSchema("default")
                 .build();
 
@@ -46,13 +58,9 @@ public class ExampleQueryRunner
                 .setExtraProperties(extraProperties)
                 .setNodeCount(1)
                 .build();
-        queryRunner.installPlugin(new ExamplePlugin());
+        queryRunner.installPlugin(new ZarrPlugin());
 
-        Map<String, String> connectorProperties = Map.of(
-                "connection-url", server.getJdbcUrl(),
-                "connection-user", server.getUser(),
-                "connection-password", server.getPassword());
-        queryRunner.createCatalog("example", "example_jdbc", connectorProperties);
+
 
         return queryRunner;
     }
@@ -61,14 +69,14 @@ public class ExampleQueryRunner
             throws Exception
     {
         Logging logger = Logging.initialize();
-        logger.setLevel("io.trino.plugin.example", Level.DEBUG);
-        logger.setLevel("io.trino", Level.INFO);
+        logger.setLevel("ch.sdsc.zarr", Level.DEBUG);
+        logger.setLevel("io.trino", Level.DEBUG);
 
-        TestingPostgreSqlServer server = new TestingPostgreSqlServer();
-        QueryRunner queryRunner = createQueryRunner(server);
+        try (QueryRunner queryRunner = createQueryRunner()) {
 
-        Logger log = Logger.get(ExampleQueryRunner.class);
-        log.info("======== SERVER STARTED ========");
-        log.info("\n====\n%s\n====", ((DistributedQueryRunner) queryRunner).getCoordinator().getBaseUrl());
+            Logger log = Logger.get(ZarrQueryRunner.class);
+            log.info("======== SERVER STARTED ========");
+            log.info("\n====\n%s\n====", ((DistributedQueryRunner) queryRunner).getCoordinator().getBaseUrl());
+        }
     }
 }

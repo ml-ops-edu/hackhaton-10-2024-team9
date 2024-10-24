@@ -154,3 +154,4 @@ Below are a list of the docker commands that may be handy for this project
   - iceberg: apache iceberg with native s3.
 - Setting _hive.metastore.warehouse.dir_ in _hive-site.xml_ and trino catalogs to an s3 path has no effect. As a result, trino/hive managed tables are not supported. This is maybe for the better, and unless there is a demand for it all tables must be explicitely created with an s3 location.
 
+### 
