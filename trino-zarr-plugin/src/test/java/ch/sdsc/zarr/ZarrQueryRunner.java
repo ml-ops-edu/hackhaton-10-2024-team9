@@ -44,8 +44,10 @@ public class ZarrQueryRunner
     public static QueryRunner createQueryRunner()
             throws Exception
     {
+        Logger log = Logger.get(ZarrQueryRunner.class);
+        log.info("======== SERVER STARTING ========");
         Session defaultSession = testSessionBuilder()
-                .setCatalog("example")
+                .setCatalog("zar-connector")
                 .setSchema("default")
                 .build();
 
@@ -68,7 +70,7 @@ public class ZarrQueryRunner
     {
         Logging logger = Logging.initialize();
         logger.setLevel("ch.sdsc.zarr", Level.DEBUG);
-        logger.setLevel("io.trino", Level.INFO);
+        logger.setLevel("io.trino", Level.DEBUG);
 
         try (QueryRunner queryRunner = createQueryRunner()) {
 

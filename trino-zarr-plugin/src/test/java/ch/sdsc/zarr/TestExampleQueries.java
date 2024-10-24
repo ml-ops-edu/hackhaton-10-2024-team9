@@ -31,14 +31,8 @@ public class TestExampleQueries
     @Test
     public void showTables()
     {
-        assertQuery("SHOW SCHEMAS FROM example", "VALUES 'information_schema', 'pg_catalog', 'public', 'tpch'");
-        assertQuery("SHOW TABLES FROM example.public", "VALUES 'test'");
+        assertQuery("SHOW TABLES FROM zarr", "VALUES 'test'");
     }
 
-    @Test
-    public void selectFromTable()
-    {
-        assertQuery("SELECT value FROM example.public.test",
-                "VALUES 'one', 'two'");
-    }
+
 }
