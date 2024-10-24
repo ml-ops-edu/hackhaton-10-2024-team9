@@ -1,6 +1,7 @@
 package ch.sdsc.zarr;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
@@ -24,6 +25,15 @@ sealed interface S3AuthConfig permits AnonymousS3Config, AuthenticatedS3Config {
             return new AuthenticatedS3Config(config.getAccessKey(), config.getSecretKey());
         }
     }
+
+    static AWSStaticCredentialsProvider getCredentialsProvider(S3AuthConfig config) {
+        if (config instanceof AnonymousS3Config) {
+            return new AWSStaticCredentialsProvider(new AnonymousAWSCredentials());
+        } else {
+            var authConfig = (AuthenticatedS3Config) config;
+            return new AWSStaticCredentialsProvider(new BasicAWSCredentials(authConfig.accessKey(), authConfig.secretKey()));
+        }
+    }
 }
 
 record AnonymousS3Config() implements S3AuthConfig {
@@ -41,6 +51,14 @@ sealed interface S3EndpointConfig permits AWSEndPoint, CustomEndpoint {
             return new CustomEndpoint(config.getUrl());
         }
     }
+
+    static AmazonS3ClientBuilder getBuilder(S3EndpointConfig config) {
+        if (config instanceof AWSEndPoint) {
+            return AmazonS3ClientBuilder.standard().withRegion(((AWSEndPoint) config).region());
+        } else {
+            return AmazonS3ClientBuilder.standard().withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(((CustomEndpoint) config).url(), "us-west-2"));
+        }
+    }
 }
 
 record AWSEndPoint(String region) implements S3EndpointConfig {
@@ -50,19 +68,24 @@ record CustomEndpoint(String url) implements S3EndpointConfig {
 }
 
 record S3Config(S3AuthConfig authConfig, S3EndpointConfig endpointConfig) {
+    static S3Config fromZarrConfig(ZarrConfig config) {
+        return new S3Config(S3AuthConfig.fromZarrConfig(config), S3EndpointConfig.fromZarrConfig(config));
+    }
 }
 
 
 public class ZarrClient {
     private AmazonS3 s3Client;
     private ZarrGroup zarrGroup;
+    private final URI url;
 
-
-    private static AmazonS3ClientBuilder getBuilder(Boolean aws)
 
     private static AmazonS3 createClient(ZarrConfig config) {
-        var authConfig = S3AuthConfig.fromZarrConfig(config);
-        var endpointConfig = S3EndpointConfig.fromZarrConfig(config);
+        var s3Config = S3Config.fromZarrConfig(config);
+        var builder = S3EndpointConfig.getBuilder(s3Config.endpointConfig());
+        builder.withCredentials(S3AuthConfig.getCredentialsProvider(s3Config.authConfig()));
+        return builder.build();
+
 
     }
 
@@ -81,14 +104,13 @@ public class ZarrClient {
     public ZarrClient(ZarrConfig config) throws IOException {
 
         s3Client = createClient(config);
-        var request = createGetObjectRequest(config, config.getKey());
-        url = s3Client.generatePresignedUrl(config.getBucket(), config.getKey(), generateExpirationDate());
+        url = URI.create(s3Client.generatePresignedUrl(config.getBucket(), config.getKey(), generateExpirationDate()).toString());
 
     }
 
     private void openZarrGroup() throws IOException {
         FileSystem s3fs = FileSystems.newFileSystem(URI.create(url.toString()), null);
-        zarrGroup = ZarrGroup.open(s3fs.getPath("/"));
+        zarrGroup = ZarrGroup.open(s3fs.getPath(""));
     }
 
 

@@ -15,6 +15,7 @@
 package ch.sdsc.zarr;
 
 import com.google.common.collect.ImmutableMap;
+import io.airlift.configuration.ConfigurationLoader;
 import io.airlift.log.Level;
 import io.airlift.log.Logger;
 import io.airlift.log.Logging;
@@ -22,15 +23,24 @@ import io.trino.Session;
 import io.trino.testing.DistributedQueryRunner;
 import io.trino.testing.QueryRunner;
 
+import java.io.FileReader;
 import java.util.Map;
+import java.util.Properties;
 
 import static io.trino.testing.TestingSession.testSessionBuilder;
 import static java.util.Objects.requireNonNullElse;
+import com.google.inject.Inject; // NEW
+
 
 public class ZarrQueryRunner
 {
-    private ZarrQueryRunner() {}
+    private ZarrConfig zarrConfig;
 
+
+    @Inject // NEW
+    public ZarrQueryRunner(ZarrConfig zarrConfig) {
+        this.zarrConfig = zarrConfig;
+    }
     public static QueryRunner createQueryRunner()
             throws Exception
     {
@@ -48,11 +58,7 @@ public class ZarrQueryRunner
                 .build();
         queryRunner.installPlugin(new ZarrPlugin());
 
-        Map<String, String> connectorProperties = Map.of(
-                "connection-url", server.getJdbcUrl(),
-                "connection-user", server.getUser(),
-                "connection-password", server.getPassword());
-        queryRunner.createCatalog("example", "example_jdbc", connectorProperties);
+
 
         return queryRunner;
     }
@@ -61,14 +67,14 @@ public class ZarrQueryRunner
             throws Exception
     {
         Logging logger = Logging.initialize();
-        logger.setLevel("io.trino.plugin.example", Level.DEBUG);
+        logger.setLevel("ch.sdsc.zarr", Level.DEBUG);
         logger.setLevel("io.trino", Level.INFO);
 
-        TestingPostgreSqlServer server = new TestingPostgreSqlServer();
-        QueryRunner queryRunner = createQueryRunner(server);
+        try (QueryRunner queryRunner = createQueryRunner()) {
 
-        Logger log = Logger.get(ZarrQueryRunner.class);
-        log.info("======== SERVER STARTED ========");
-        log.info("\n====\n%s\n====", ((DistributedQueryRunner) queryRunner).getCoordinator().getBaseUrl());
+            Logger log = Logger.get(ZarrQueryRunner.class);
+            log.info("======== SERVER STARTED ========");
+            log.info("\n====\n%s\n====", ((DistributedQueryRunner) queryRunner).getCoordinator().getBaseUrl());
+        }
     }
 }

@@ -25,8 +25,7 @@ public class TestExampleQueries
     protected QueryRunner createQueryRunner()
             throws Exception
     {
-        TestingPostgreSqlServer server = new TestingPostgreSqlServer();
-        return ZarrQueryRunner.createQueryRunner(server);
+        return ZarrQueryRunner.createQueryRunner();
     }
 
     @Test
