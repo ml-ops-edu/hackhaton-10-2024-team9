@@ -27,11 +27,11 @@ import java.util.Map;
 import static io.trino.testing.TestingSession.testSessionBuilder;
 import static java.util.Objects.requireNonNullElse;
 
-public class ExampleQueryRunner
+public class ZarrQueryRunner
 {
-    private ExampleQueryRunner() {}
+    private ZarrQueryRunner() {}
 
-    public static QueryRunner createQueryRunner(TestingPostgreSqlServer server)
+    public static QueryRunner createQueryRunner()
             throws Exception
     {
         Session defaultSession = testSessionBuilder()
@@ -46,7 +46,7 @@ public class ExampleQueryRunner
                 .setExtraProperties(extraProperties)
                 .setNodeCount(1)
                 .build();
-        queryRunner.installPlugin(new ExamplePlugin());
+        queryRunner.installPlugin(new ZarrPlugin());
 
         Map<String, String> connectorProperties = Map.of(
                 "connection-url", server.getJdbcUrl(),
@@ -67,7 +67,7 @@ public class ExampleQueryRunner
         TestingPostgreSqlServer server = new TestingPostgreSqlServer();
         QueryRunner queryRunner = createQueryRunner(server);
 
-        Logger log = Logger.get(ExampleQueryRunner.class);
+        Logger log = Logger.get(ZarrQueryRunner.class);
         log.info("======== SERVER STARTED ========");
         log.info("\n====\n%s\n====", ((DistributedQueryRunner) queryRunner).getCoordinator().getBaseUrl());
     }
