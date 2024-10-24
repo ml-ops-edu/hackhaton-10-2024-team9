@@ -26,6 +26,11 @@
     <div class="slides">
 
 <section>
+  <h2>Processing Large Scale Multidimensional S3 Data on Distributed SQL Engines</h1>
+  <h5>SDSC Hackathon Oct 2024</h5>
+</section>
+
+<section>
   <h2>Purpose of NetCDF4/HDF5</h2>
   <ul>
     <li>Widely used in earth and medical data for storing and sharing large scientific datasets.</li>
@@ -162,14 +167,15 @@ data:
     <li>
       <strong>In Scope</strong>
       <ul>
-        <li>A comprehensive blueprint outlining the architecture and design.</li>
-        <li>A working proof of concept (PoC) that demonstrates the proposed solution or its essential components.</li>
+        <li>A detailed blueprint outlining the architecture and design.</li>
+        <li>A functional proof of concept (PoC) that demonstrates the proposed solution or its essential components.</li>
       </ul>
     </li>
     <li>
       <strong>Out of Scope</strong>
       <ul>
-        <li>Support for managing multiple tables within the same catalog; a catalog will be configured for one table location (no metastore required).</li>
+        <li>Support for managing multiple tables within the same catalog; a setup will support a single table location configuration (no metastore needed).</li>
+        <li>Query pushdown capabilities, such as in Trino-on-Trino query federation.</li>
       </ul>
     </li>
   </ul>
@@ -192,6 +198,21 @@ SELECT zarr_average(chunk, 'time') FROM ClimateChunk;
   </code></pre>
 </section>
 
+<section>
+  <h2>Schedule</h2>
+  <ul>
+    <li class="fragment custom blur"><strong>Task 1</strong><ul><li>Set up the development environment, including a Trino development cluster and a Java development IDE.</li></ul></li>
+    <li class="fragment custom blur"><strong>Task 2</strong><ul><li>Develop and test a standalone Java reader capable of filtering chunks from Zarr datasets.</li></ul></li>
+    <li class="fragment custom blur"><strong>Task 3</strong><ul><li>Create and validate a minimal connector wrapper around the Zarr reader.</li></ul></li>
+    <li class="fragment custom blur"><strong>Task 4</strong><ul><li>Develop and test a User Defined Function (UDF) for processing array chunks.</li></ul></li>
+    <li class="fragment fade-up"><strong>Task 5</strong><ul><li>Publish the project and engage with the Trino developer community for outreach and feedback.</li></ul></li>
+  </ul>
+</section>
+
+<section>
+  <h2>Start your engines</h2>
+  <a href="https://github.com/ml-ops-edu/hackhaton-10-2024-team9/tree/main/containers/README.md"/>Set up a Trino cluster</a>
+</section>
   </div>
 </div>
   <script src="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.js"></script>
