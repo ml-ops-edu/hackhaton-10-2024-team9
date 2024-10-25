@@ -54,10 +54,12 @@ public class ZarrQueryRunner
         Map<String, String> extraProperties = ImmutableMap.<String, String>builder()
                 .put("http-server.http.port", requireNonNullElse(System.getenv("TRINO_PORT"), "8080"))
                 .build();
+        System.out.println(extraProperties);
         QueryRunner queryRunner = DistributedQueryRunner.builder(defaultSession)
                 .setExtraProperties(extraProperties)
                 .setNodeCount(1)
                 .build();
+        System.out.println(queryRunner);
         queryRunner.installPlugin(new ZarrPlugin());
 
 
@@ -76,7 +78,9 @@ public class ZarrQueryRunner
 
             Logger log = Logger.get(ZarrQueryRunner.class);
             log.info("======== SERVER STARTED ========");
-            log.info("\n====\n%s\n====", ((DistributedQueryRunner) queryRunner).getCoordinator().getBaseUrl());
+            String baseUrl = ((DistributedQueryRunner) queryRunner).getCoordinator().getBaseUrl().toString();
+            log.info("\n====\n%s\n====", baseUrl.replace("localhost/127.0.0.1", "localhost"));
+            //log.info("\n====\n%s\n====", ((DistributedQueryRunner) queryRunner).getCoordinator().getBaseUrl());
         }
     }
 }
