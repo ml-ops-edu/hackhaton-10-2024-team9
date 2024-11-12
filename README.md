@@ -2,6 +2,8 @@
 
 **Processing Large Scale Multidimensional S3 Data on Distributed SQL Engines**
 
+[Online presentation](https://ml-ops-edu.github.io/hackhaton-10-2024-team9/)
+
 [Full description](https://sdsc-hackathons.ch/projectPage?projectRef=vUt8BfDJXaAs0UfOesXI|k7GpeFFCLbNxAv60mNra)
 
 Starter Pack.
